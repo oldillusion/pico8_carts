@@ -12,8 +12,9 @@ function _update()
 end
 
 function _draw()
-	cls()
+	cls(13)
 	map()
+	d_ui()
 	d_player()
 end
 -->8
@@ -26,16 +27,16 @@ function i_player()
 end
 
 function u_player()
-	if btn(⬆️) and player.y>10 then
+	if btn(⬆️) and player.y>11 then
 		player.y-=1
 	end
-	if btn(➡️) and player.x<128 then
+	if btn(➡️) and player.x<121 then
 	 player.x+=1
 	end
-	if btn(⬇️) and player.y<108 then
+	if btn(⬇️) and player.y<110 then
 	 player.y+=1
 	end
-	if btn(⬅️) and player.x>0 then
+	if btn(⬅️) and player.x>=0 then
 	 player.x-=1
 	end
 end
@@ -43,6 +44,21 @@ end
 function d_player()
 	spr(1,player.x,player.y)
 	--print(player.x.." "..player.y)
+end
+-->8
+-- ui
+
+function i_ui()
+
+end
+
+function u_ui()
+
+end
+
+function d_ui()
+ rectfill(0,0,128,10,1)
+ rectfill(0,118,128,128,1)
 end
 __gfx__
 00060000000440000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
