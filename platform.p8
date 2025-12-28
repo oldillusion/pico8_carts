@@ -44,6 +44,9 @@ function _init()
  map_end=326
  
  x1r=0 y1r=0 x2r=0 y2r=0
+ 
+ -- music please
+ music(6)
 end
 
 function _update()
@@ -159,6 +162,7 @@ function player_update()
  if btnp(❎) and player.landed then
   player.dy-=player.boost
   player.landed=false
+  sfx(7)
  end
  
  --check collision y
@@ -269,6 +273,7 @@ menu_mobs={
 function update_menu()
  if btnp(❎) then
   state="game"
+  music(12)
  end 
 end
 
@@ -709,7 +714,7 @@ __music__
 06 18194344
 00 1a424344
 01 1a1b4344
-00 1a1b4344
+04 1a1b4344
 00 1a1c4344
 00 1a1c4344
 02 1d1e4344
