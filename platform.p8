@@ -4,7 +4,7 @@ __lua__
 -- init, update, draw
 
 function _init()
- state="intro"
+ state="game"
  
  fade_in={0,0,0,0,0,0,5,13,15,7}
  fade_out={7,15,13,5,0,0}
@@ -70,9 +70,52 @@ function _draw()
 end
 -->8
 -- game update and draw
+
+game_mobs={
+ {
+  x=16,
+  y=32,
+  x1=16,
+  x2=48,
+  static=false,
+  frame=0,
+  flp=false,
+  anim=0,
+  move=0,
+  mov_d=1
+ },
+ {
+  x=144,
+  y=72,
+  x1=144,
+  x2=208,
+  static=false,
+  frame=0,
+  flp=false,
+  anim=0,
+  move=0,
+  mov_d=1
+ },
+ {
+  x=240,
+  y=104,
+  x1=240,
+  x2=280,
+  static=false,
+  frame=0,
+  flp=false,
+  anim=0,
+  move=0,
+  mov_d=1
+ },
+}
+
 function update_game()
  player_update()
  player_animate()
+ for mob in all(game_mobs) do
+  mob_animate(mob)
+ end
  
  --simple camera
  cam_x=player.x-64+(player.w/2)
@@ -89,6 +132,9 @@ function draw_game()
  cls()
  map(0,0)
  spr(player.sp,player.x,player.y,1,1,player.flp)
+ for mob in all(game_mobs) do
+  spr(104+mob.frame,mob.x,mob.y,1,1,mob.flp)
+ end
  --rect(x1r,y1r,x2r,y2r,7)
 end
 -->8
@@ -129,7 +175,7 @@ function collide_map(obj,aim,flag)
  return false
 end
 -->8
--- player
+-- player and mob
 
 function player_update()
  --physics
@@ -238,6 +284,27 @@ function player_animate()
   end
  end
 end
+
+function mob_animate(mob)
+	if time()-mob.anim>.2 then
+	 mob.anim=time()
+	 mob.frame+=1
+	 if mob.frame==2 then
+	  mob.frame=0
+	 end
+	end
+	if time()-mob.move>.05 then
+	 mob.move=time()
+	 mob.x+=mob.mov_d
+	 if mob.x>mob.x2 then
+	  mob.mov_d=-1
+	  mob.flp=true
+	 elseif mob.x<mob.x1 then
+	  mob.mov_d=1
+	  mob.flp=false
+	 end
+	end
+end
 -->8
 -- menu update and draw
 
@@ -266,7 +333,8 @@ menu_mobs={
   frame=0,
   flp=false,
   anim=0,
-  mov_dir="r"
+  move=0,
+  mov_d=1
  }
 }
 
@@ -284,25 +352,34 @@ function draw_menu()
  print("press ❎ to start",31,64,3)
 
  -- do the snakes
- for idx, mob in pairs(menu_mobs) do
+ for mob in all(menu_mobs) do
   if mob.static==true then
 	  if time()-mob.anim>.5 then
-	   menu_mobs[idx].anim=time()
+	   mob.anim=time()
 	   if flr(rnd(10))>3 then
-	    menu_mobs[idx].frame+=1
+	    mob.frame+=1
 	    if mob.frame==2 then
-	     menu_mobs[idx].frame=0
+	     mob.frame=0
 	    end
 	   end
 	  end
 	 else
-	  if time()-mob.anim>.5 then
-	   menu_mobs[idx].anim=time()
-	   if flr(rnd(10))>3 then
-	    menu_mobs[idx].frame+=1
-	    if mob.frame==2 then
-	     menu_mobs[idx].frame=0
-	    end
+	  if time()-mob.anim>.2 then
+	   mob.anim=time()
+    mob.frame+=1
+    if mob.frame==2 then
+     mob.frame=0
+    end
+	  end
+	  if time()-mob.move>.05 then
+	   mob.move=time()
+	   mob.x+=mob.mov_d
+	   if mob.x>95 then
+	    mob.mov_d=-1
+	    mob.flp=true
+	   elseif mob.x<24 then
+	    mob.mov_d=1
+	    mob.flp=false
 	   end
 	  end
 	 end
@@ -714,7 +791,7 @@ __music__
 06 18194344
 00 1a424344
 01 1a1b4344
-04 1a1b4344
+00 1a1b4344
 00 1a1c4344
 00 1a1c4344
 02 1d1e4344
