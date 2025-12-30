@@ -4,8 +4,7 @@ __lua__
 -- init, update, draw
 
 function _init()
- state="game"
- collided=false
+ state="intro"
  
  fade_in={0,0,0,0,0,0,5,13,15,7}
  fade_out={7,15,13,5,0,0}
@@ -13,6 +12,9 @@ function _init()
 	fade_col=0
 	fade_anim=0
 	fade_pos=0
+	
+	death_frames={128,133,134}
+	dying_music=false
 	 
  player={
   sp=128,
@@ -32,7 +34,18 @@ function _init()
   jumping=false,
   falling=false,
   sliding=false,
-  landed=false
+  landed=false,
+  health=2,
+  hurt=false,
+  hurt_anim=0,
+  hurt_blink=true,
+  hurt_blink_count=0,
+  hurt_time=10,
+  dying=false,
+  dead=false,
+  death_anim=0,
+  death_frame=0,
+  score=0
  }
  
  gravity=0.3
@@ -156,17 +169,39 @@ end
 function draw_game()
  cls()
  map(0,0)
- spr(player.sp,player.x,player.y,1,1,player.flp)
+ for i=0,player.health,1 do
+  spr(64,cam_x+(i*8),1)
+ end
+ local dead_count=0
  for mob in all(game_mobs) do
   if mob.dying then
    spr(71+mob.frame,mob.x,mob.y)
   elseif not mob.dead then
    spr(104+mob.frame,mob.x,mob.y,1,1,mob.flp)
+  else
+   dead_count+=1
   end
  end
- if collided then
-  pset(player.x-1,player.y-1,8)
+ if dead_count==#game_mobs then
+  for mob in all(game_mobs) do
+   mob.dying=false
+   mob.dead=false
+   mob.frame=0
+   if mob.mov_d<0 then
+    mob.mov_d-=.5
+   else
+    mob.mov_d+=.5
+   end
+  end
  end
+ if player.hurt and player.hurt_blink then
+  spr(0,player.x,player.y,1,1,player.flp)
+ elseif player.dead then
+  spr(52,player.x,player.y)
+ else
+  spr(player.sp,player.x,player.y,1,1,player.flp)
+ end
+ print(player.score,cam_x+110,1,7)
 end
 -->8
 -- collisions
@@ -223,12 +258,16 @@ function player_update()
  player.dx*=friction
  
  --controls
- if btn(⬅️) then
+ if btn(⬅️)
+ and not player.dying
+ and not player.dead then
   player.dx-=player.acc
   player.running=true
   player.flp=true
  end
- if btn(➡️) then
+ if btn(➡️)
+ and not player.dying
+ and not player.dead then
   player.dx+=player.acc
   player.running=true
   player.flp=false
@@ -245,7 +284,10 @@ function player_update()
  end
  
  --jump
- if btnp(❎) and player.landed then
+ if btnp(❎)
+ and player.landed
+ and not player.dying
+ and not player.dead then
   player.dy-=player.boost
   player.landed=false
   sfx(7)
@@ -293,18 +335,33 @@ function player_update()
  player.y+=player.dy
  
  for mob in all(game_mobs) do
-  if not mob.dead and 
-     collision_obj(player,mob) then
+  if not mob.dead
+  and not player.dying
+  and not player.dead
+  and collision_obj(player,mob) then
    if player.falling then
     mob.dying=true
     mob.frame=0
     sfx(6)
-    player.dy-=player.boost
+    player.score+=10
+    player.dy=-player.boost
     player.landed=false
-   else
-    
+   elseif not player.hurt then
+    player.hurt=true
+    player.health-=1
+    sfx(2)
    end
   end
+ end
+ 
+ if player.health<0 then
+  player.hurt=false
+  player.dying=true
+  if not dying_music then
+   music(14)
+   dying_music=true
+  end
+  player.sp=death_frames[player.death_frame]
  end
  
  if player.x<map_start then
@@ -316,6 +373,18 @@ function player_update()
 end
 
 function player_animate()
+ if player.dying then
+  if time()-player.death_anim>.5 then
+   player.death_anim=time()
+   player.death_frame+=1
+   if player.death_frame<#death_frames then
+    player.sp=death_frames[player.death_frame]
+   else
+    player.dying=false
+    player.dead=true
+   end
+  end
+ end
  if player.jumping then
   player.sp=148
  elseif player.falling then
@@ -329,12 +398,28 @@ function player_animate()
     player.sp=144
    end
   end
- else
+ elseif not player.dying
+ and not player.dead then
   if time()-player.anim>.2 then
    player.anim=time()
    player.sp+=1
    if player.sp>129 then
     player.sp=128
+   end
+  end
+ end
+ if player.hurt then
+  if time()-player.hurt_anim>.1 then
+   player.hurt_anim=time()
+   if player.hurt_blink then
+    player.hurt_blink=false
+    player.hurt_blink_count+=1
+    if player.hurt_blink_count>player.hurt_time then
+     player.hurt=false
+     player.hurt_blink_count=0
+    end
+   else
+    player.hurt_blink=true
    end
   end
  end
@@ -366,10 +451,10 @@ function mob_animate(mob)
 	 mob.move=time()
 	 mob.x+=mob.mov_d
 	 if mob.x>mob.x2 then
-	  mob.mov_d=-1
+	  mob.mov_d=-mob.mov_d
 	  mob.flp=true
 	 elseif mob.x<mob.x1 then
-	  mob.mov_d=1
+	  mob.mov_d=-mob.mov_d
 	  mob.flp=false
 	 end
 	end
@@ -410,7 +495,7 @@ menu_mobs={
 function update_menu()
  if btnp(❎) then
   state="game"
-  music(12)
+  music(18)
  end 
 end
 
@@ -754,7 +839,7 @@ __gff__
 000303010181010001000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000000000000000c0000040400000000000000000000000000000000000000000000000000000000000c0c00000000000000000000000000000000000001000000
 0000000000000000000001010101010100000000000000000000000000010101000000000000000000000000010101010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
-0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+009c00000000009c000000bd00bd000000bd000000000000000000009c000000bd000000bd0000bd00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 009c00000000009c000000bd00bd000000bd000000000000000000009c000000bd000000bd0000bd00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 009c00000000009c000000bd00bd000000bd000000000000000000009c000000bd000000bd0000bd00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 009c00000000009c0000007500bd000000bd000000000000000000009c000000bd000000bd0000bd00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
