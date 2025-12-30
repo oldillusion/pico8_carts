@@ -35,7 +35,7 @@ function _init()
   falling=false,
   sliding=false,
   landed=false,
-  health=2,
+  health=3,
   hurt=false,
   hurt_anim=0,
   hurt_blink=true,
@@ -45,7 +45,8 @@ function _init()
   dead=false,
   death_anim=0,
   death_frame=0,
-  score=0
+  score=0,
+  game_over_anim=0
  }
  
  gravity=0.3
@@ -198,6 +199,9 @@ function draw_game()
   spr(0,player.x,player.y,1,1,player.flp)
  elseif player.dead then
   spr(52,player.x,player.y)
+  if time()-player.game_over_anim>4 then
+   print("game over",cam_x+48,48,7)
+  end
  else
   spr(player.sp,player.x,player.y,1,1,player.flp)
  end
@@ -293,6 +297,11 @@ function player_update()
   sfx(7)
  end
  
+ if btnp(❎) and player.dead then
+  _init()
+  state="menu"
+ end
+ 
  --check collision y
  if player.dy>0 then
   player.falling=true
@@ -358,6 +367,7 @@ function player_update()
   player.hurt=false
   player.dying=true
   if not dying_music then
+   player.game_over_anim=time()
    music(14)
    dying_music=true
   end
